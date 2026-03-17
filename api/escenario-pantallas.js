@@ -45,23 +45,9 @@ export default function handler(req, res) {
     const aA_D = acepta(pA, dA, P_D);
     const aB_D = acepta(pB, dB, P_D);
 
-    // Participación
-    const compraC = aA_C || aB_C;
-    const compraD = aA_D || aB_D;
-
-    if (!compraC || !compraD) {
-      let noCompran = 0;
-      if (!compraC) noCompran += N_C;
-      if (!compraD) noCompran += N_D;
-
-      return res.status(200).json({
-        status: "no_sale",
-        clientes_no_compran: noCompran
-      });
-    }
-
-    // Elección
+    // Elección: ahora puede devolver null si no acepta ningún plan
     function elegir(aA, aB, p) {
+      if (!aA && !aB) return null;
       if (aA && !aB) return "A";
       if (!aA && aB) return "B";
 
@@ -82,31 +68,38 @@ export default function handler(req, res) {
 
     let clientesA = 0;
     let clientesB = 0;
+    let clientesNoCompran = 0;
 
     let cA_C = 0, cB_C = 0;
     let cA_D = 0, cB_D = 0;
 
+    // Cuidadosos
     if (eleccionC === "A") {
       clientesA += N_C;
       cA_C = N_C;
-    } else {
+    } else if (eleccionC === "B") {
       clientesB += N_C;
       cB_C = N_C;
+    } else {
+      clientesNoCompran += N_C;
     }
 
+    // Descuidados
     if (eleccionD === "A") {
       clientesA += N_D;
       cA_D = N_D;
-    } else {
+    } else if (eleccionD === "B") {
       clientesB += N_D;
       cB_D = N_D;
+    } else {
+      clientesNoCompran += N_D;
     }
 
-    // Roturas
+    // Roturas: solo sobre quienes compran
     const rotA = 0.05 * cA_C + 0.25 * cA_D;
     const rotB = 0.05 * cB_C + 0.25 * cB_D;
 
-    // Ganancia
+    // Ganancia: solo sobre quienes compran
     const primas = pA * clientesA + pB * clientesB;
 
     const costos =
@@ -115,11 +108,19 @@ export default function handler(req, res) {
 
     const ganancia = primas - costos;
 
+    // Status interpretativo
+    let status = "full_sale";
+    if (clientesNoCompran === 100) {
+      status = "no_sale";
+    } else if (clientesNoCompran > 0) {
+      status = "partial_sale";
+    }
+
     return res.status(200).json({
-      status: "full_sale",
+      status: status,
       clientes_plan_A: clientesA,
       clientes_plan_B: clientesB,
-      clientes_no_compran: 0,
+      clientes_no_compran: clientesNoCompran,
       roturas_A: rotA,
       roturas_B: rotB,
       ganancia: ganancia
