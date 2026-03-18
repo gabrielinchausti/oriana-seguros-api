@@ -123,8 +123,7 @@ export default function handler(req, res) {
       clientes_no_compran: clientesNoCompran,
       roturas_A: rotA,
       roturas_B: rotB,
-      ganancia: ganancia,
-      api_test: "VINO_DE_VERCEL_12345"
+      ganancia: ganancia
     });
 
   } catch (e) {
